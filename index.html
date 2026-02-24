@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DMS Fitness Landscape Explorer</title>
+    <meta name="description" content="Interactive explorer for deep mutational scanning fitness landscape data">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>Loading Fitness Landscape</h2>
+            <p id="loading-status">Initializing...</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="loading-progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-inner">
+            <div class="nav-brand">
+                <span class="nav-icon">&#x1F9EC;</span>
+                <span class="nav-title">DMS Fitness Explorer</span>
+            </div>
+            <div class="nav-links">
+                <a href="#landscape" class="nav-link active">Landscape</a>
+                <a href="#explorer" class="nav-link">Explorer</a>
+                <a href="#statistics" class="nav-link">Statistics</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero / Header -->
+    <header class="hero" id="hero">
+        <div class="container">
+            <h1>Deep Mutational Scanning<br>Fitness Landscape Explorer</h1>
+            <div class="scaffold-display" id="scaffold-display">
+                <!-- Filled by JS with colored variable positions -->
+            </div>
+            <div class="data-summary" id="data-summary">
+                <!-- Filled by JS after data loads -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+
+        <!-- Section: Interactive Landscape -->
+        <section id="landscape" class="section">
+            <div class="section-header">
+                <h2>Interactive Fitness Landscape</h2>
+                <p>Click amino acid chips or heatmap cells to filter. See how fitness changes across positions.</p>
+            </div>
+
+            <!-- Position Selector Bar -->
+            <div class="card selector-card" id="selector-card">
+                <div class="selector-header">
+                    <h3>Position Filters</h3>
+                    <div class="selector-controls">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="hide-stops-toggle">
+                            <span>Hide stop codons</span>
+                        </label>
+                        <button class="btn btn-sm btn-outline" id="clear-all-btn">Clear All</button>
+                    </div>
+                </div>
+                <div id="selector-container">
+                    <!-- Filled by ui-selector.js -->
+                </div>
+                <div class="filter-summary" id="filter-summary">
+                    <!-- Shows current filter state and matching count -->
+                </div>
+            </div>
+
+            <!-- Heatmap + Distribution Row -->
+            <div class="viz-row">
+                <div class="card viz-card viz-card-wide">
+                    <div class="card-header">
+                        <h3>Marginal Fitness Heatmap</h3>
+                        <div class="scale-toggle" id="scale-toggle">
+                            <button class="btn btn-xs active" data-scale="log">Log</button>
+                            <button class="btn btn-xs" data-scale="linear">Linear</button>
+                            <button class="btn btn-xs" data-scale="rank">Rank</button>
+                        </div>
+                    </div>
+                    <div id="marginal-heatmap" class="plot-container"></div>
+                </div>
+                <div class="card viz-card">
+                    <div class="card-header">
+                        <h3>Fitness Distributions</h3>
+                    </div>
+                    <div id="distribution-plot" class="plot-container"></div>
+                </div>
+            </div>
+
+            <!-- Pairwise Epistasis Heatmaps -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Pairwise Epistasis</h3>
+                    <p class="card-subtitle">Mean fitness for each amino acid combination at two positions, conditioned on current filters</p>
+                </div>
+                <div class="pairwise-grid" id="pairwise-grid">
+                    <div id="pw-9-12" class="plot-container pairwise-plot"></div>
+                    <div id="pw-9-13" class="plot-container pairwise-plot"></div>
+                    <div id="pw-9-16" class="plot-container pairwise-plot"></div>
+                    <div id="pw-12-13" class="plot-container pairwise-plot"></div>
+                    <div id="pw-12-16" class="plot-container pairwise-plot"></div>
+                    <div id="pw-13-16" class="plot-container pairwise-plot"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Sequence Explorer -->
+        <section id="explorer" class="section">
+            <div class="section-header">
+                <h2>Sequence Explorer</h2>
+                <p>Browse, search, and sort all sequences. Filters from above are applied.</p>
+            </div>
+
+            <div class="card">
+                <div class="table-controls">
+                    <div class="search-box">
+                        <input type="text" id="seq-search" placeholder="Search sequences (e.g. AKLF or rank number)..." class="input">
+                    </div>
+                    <div class="table-actions">
+                        <select id="sort-select" class="input input-select">
+                            <option value="slope-desc">Fitness: High to Low</option>
+                            <option value="slope-asc">Fitness: Low to High</option>
+                            <option value="rank-asc">Rank: Best First</option>
+                        </select>
+                        <button class="btn btn-sm btn-outline" id="export-btn">Export CSV</button>
+                    </div>
+                </div>
+                <div class="table-info" id="table-info"></div>
+                <div class="table-wrapper" id="table-wrapper">
+                    <table class="data-table" id="seq-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-sort="rank">Rank</th>
+                                <th>Sequence</th>
+                                <th class="sortable" data-sort="p9">Pos 9</th>
+                                <th class="sortable" data-sort="p12">Pos 12</th>
+                                <th class="sortable" data-sort="p13">Pos 13</th>
+                                <th class="sortable" data-sort="p16">Pos 16</th>
+                                <th class="sortable active-sort" data-sort="slope">Fitness</th>
+                                <th>Tags</th>
+                            </tr>
+                        </thead>
+                        <tbody id="seq-tbody">
+                        </tbody>
+                    </table>
+                    <div id="table-sentinel" class="table-sentinel"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Summary Statistics -->
+        <section id="statistics" class="section">
+            <div class="section-header">
+                <h2>Summary Statistics</h2>
+                <p>Overview of the fitness landscape distribution and key metrics.</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="card">
+                    <div class="card-header"><h3>Fitness Distribution</h3></div>
+                    <div id="fitness-histogram" class="plot-container"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3>Position Tolerance</h3></div>
+                    <div id="position-entropy" class="plot-container"></div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="card">
+                    <div class="card-header"><h3>Top 20 Sequences</h3></div>
+                    <div class="ranked-list" id="top-sequences"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3>Bottom 20 Sequences</h3></div>
+                    <div class="ranked-list" id="bottom-sequences"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>DMS Fitness Landscape Explorer &mdash; Built for interactive exploration of deep mutational scanning data</p>
+        </div>
+    </footer>
+
+    <!-- CDN Libraries -->
+    <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <!-- Application Modules -->
+    <script src="js/data-processor.js"></script>
+    <script src="js/data-loader.js"></script>
+    <script src="js/viz-heatmap.js"></script>
+    <script src="js/viz-charts.js"></script>
+    <script src="js/ui-selector.js"></script>
+    <script src="js/ui-table.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
