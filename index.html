@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/molstar@4.5.0/build/viewer/molstar.css">
 </head>
 <body>
     <!-- Loading Overlay -->
@@ -32,6 +33,7 @@
             </div>
             <div class="nav-links">
                 <a href="#landscape" class="nav-link active">Landscape</a>
+                <a href="#structure" class="nav-link">Structure</a>
                 <a href="#explorer" class="nav-link">Explorer</a>
                 <a href="#statistics" class="nav-link">Statistics</a>
             </div>
@@ -99,6 +101,43 @@
                         <h3>Fitness Distributions</h3>
                     </div>
                     <div id="distribution-plot" class="plot-container"></div>
+                </div>
+            </div>
+
+            <!-- 3D Structure Viewer -->
+            <div class="card" id="structure-card">
+                <div class="card-header">
+                    <h3>Ras–Raf Interface Structure</h3>
+                    <div class="structure-controls">
+                        <span class="structure-pdb-label">PDB: 4G0N</span>
+                        <select id="structure-color-mode" class="input input-select">
+                            <option value="mean">Color by mean fitness</option>
+                            <option value="tolerance">Color by AA tolerance</option>
+                        </select>
+                        <button class="btn btn-xs" id="structure-reset-btn">Reset View</button>
+                    </div>
+                </div>
+                <div class="structure-layout" id="structure">
+                    <div class="structure-viewer-wrap">
+                        <div id="molstar-viewer" class="molstar-container"></div>
+                    </div>
+                    <div class="structure-legend" id="structure-legend">
+                        <div class="legend-title">Fitness at Interface</div>
+                        <div class="legend-info" id="structure-info">
+                            Raf RBD (Chain B, residues 72–96) at the Ras binding interface.
+                            Variable positions are colored by mean fitness under current filters.
+                        </div>
+                        <div class="legend-residues" id="structure-residues">
+                            <!-- Filled by viz-structure.js -->
+                        </div>
+                        <div class="legend-gradient">
+                            <div class="gradient-bar"></div>
+                            <div class="gradient-labels">
+                                <span>Low fitness</span>
+                                <span>High fitness</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -204,12 +243,14 @@
     <!-- CDN Libraries -->
     <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/molstar@4.5.0/build/viewer/molstar.js"></script>
 
     <!-- Application Modules -->
     <script src="js/data-processor.js"></script>
     <script src="js/data-loader.js"></script>
     <script src="js/viz-heatmap.js"></script>
     <script src="js/viz-charts.js"></script>
+    <script src="js/viz-structure.js"></script>
     <script src="js/ui-selector.js"></script>
     <script src="js/ui-table.js"></script>
     <script src="js/app.js"></script>

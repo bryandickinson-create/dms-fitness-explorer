@@ -168,6 +168,7 @@ const App = (function () {
             UISelector.init();
             VizHeatmap.init();
             VizCharts.init();
+            VizStructure.init();
             UITable.init();
 
             // Wire up controls
