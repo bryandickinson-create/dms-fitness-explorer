@@ -39,18 +39,22 @@ const DataLoader = (function () {
                 setStatus('Building search indices...');
                 setProgress(60);
 
-                // Use requestAnimationFrame to let the UI update
-                requestAnimationFrame(() => {
+                // Use setTimeout to let the UI update (rAF doesn't fire in background tabs)
+                setTimeout(() => {
                     DataProcessor.init(results.data);
                     setStatus('Rendering visualizations...');
                     setProgress(90);
 
-                    requestAnimationFrame(() => {
-                        callback();
+                    setTimeout(() => {
+                        try {
+                            callback();
+                        } catch (err) {
+                            console.error('Init error:', err);
+                        }
                         setProgress(100);
                         setTimeout(hideOverlay, 300);
-                    });
-                });
+                    }, 50);
+                }, 50);
             },
             error: function (err) {
                 setStatus('Error loading data: ' + err.message);

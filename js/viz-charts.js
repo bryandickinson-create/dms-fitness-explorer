@@ -15,7 +15,6 @@ const VizCharts = (function () {
     function render(state) {
         renderDistributions(state);
         renderHistogram(state);
-        renderPositionEntropy(state);
         renderTopBottom(state);
     }
 
@@ -120,33 +119,45 @@ const VizCharts = (function () {
             nbinsx: 80
         }];
 
-        if (state.filteredIndices !== null) {
+        const hasFilter = state.filteredIndices !== null;
+
+        if (hasFilter) {
             traces.push({
                 type: 'histogram',
                 x: filteredSlopes.map(v => Math.log10(Math.max(v, 0.001))),
                 name: 'Filtered',
                 opacity: 0.7,
                 marker: { color: '#800000' },
-                nbinsx: 80
+                nbinsx: 80,
+                yaxis: 'y2'
             });
         }
 
         const layout = {
-            margin: { t: 20, b: 50, l: 50, r: 20 },
+            margin: { t: 20, b: 50, l: 50, r: hasFilter ? 50 : 20 },
             xaxis: {
                 title: { text: 'log10(Fitness)', font: { size: 11 } },
                 tickfont: { size: 10 }
             },
             yaxis: {
-                title: { text: 'Count', font: { size: 11 } },
+                title: { text: hasFilter ? 'All (count)' : 'Count', font: { size: 11 } },
                 tickfont: { size: 10 }
             },
             barmode: 'overlay',
-            showlegend: state.filteredIndices !== null,
-            legend: { x: 0.7, y: 0.95, font: { size: 10 } },
+            showlegend: hasFilter,
+            legend: { x: 0.65, y: 0.95, font: { size: 10 } },
             plot_bgcolor: 'rgba(0,0,0,0)',
             paper_bgcolor: 'rgba(0,0,0,0)'
         };
+
+        if (hasFilter) {
+            layout.yaxis2 = {
+                title: { text: 'Filtered (count)', font: { size: 11 }, standoff: 5 },
+                tickfont: { size: 10 },
+                overlaying: 'y',
+                side: 'right'
+            };
+        }
 
         Plotly.react(container, traces, layout, plotlyConfig);
     }
