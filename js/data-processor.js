@@ -68,10 +68,12 @@ const DataProcessor = (function () {
         // Parse raw data into compact representation
         for (let i = 0; i < rawData.length; i++) {
             const row = rawData[i];
-            if (!row['Protein Seq'] || row['Slope'] == null) continue;
+            if (!row['Protein Seq']) continue;
+            const slopeRaw = row['Passage 4 Slope'] != null ? row['Passage 4 Slope'] : row['Slope'];
+            if (slopeRaw == null) continue;
 
             const seq = row['Protein Seq'];
-            const slope = parseFloat(row['Slope']);
+            const slope = parseFloat(slopeRaw);
             if (isNaN(slope)) continue;
 
             const p9 = seq[9] || '';
