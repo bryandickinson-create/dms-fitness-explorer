@@ -9,7 +9,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/molstar@4.5.0/build/viewer/molstar.css">
 </head>
 <body>
     <!-- Loading Overlay -->
@@ -119,7 +118,8 @@
                 </div>
                 <div class="structure-layout" id="structure">
                     <div class="structure-viewer-wrap">
-                        <div id="molstar-viewer" class="molstar-container"></div>
+                        <div id="viewer-3dmol" class="viewer-3dmol-container"></div>
+                        <div class="structure-hover-tooltip" id="structure-tooltip"></div>
                     </div>
                     <div class="structure-legend" id="structure-legend">
                         <div class="legend-title">Fitness at Interface</div>
@@ -135,6 +135,12 @@
                             <div class="gradient-labels">
                                 <span>Low fitness</span>
                                 <span>High fitness</span>
+                            </div>
+                        </div>
+                        <div class="legend-contacts" id="structure-contacts">
+                            <div class="legend-subtitle">Ras Contact Residues</div>
+                            <div id="contact-residues-list">
+                                <!-- Filled by viz-structure.js -->
                             </div>
                         </div>
                     </div>
@@ -243,7 +249,7 @@
     <!-- CDN Libraries -->
     <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/molstar@4.5.0/build/viewer/molstar.js"></script>
+    <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
 
     <!-- Application Modules -->
     <script src="js/data-processor.js"></script>
