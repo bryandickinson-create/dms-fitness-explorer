@@ -1,5 +1,5 @@
 /* =================================================================
-   Viz Heatmap — Marginal fitness heatmap + pairwise epistasis
+   Viz Heatmap — Marginal fitness heatmap + pairwise epistasis (dark)
    ================================================================= */
 
 const VizHeatmap = (function () {
@@ -8,16 +8,21 @@ const VizHeatmap = (function () {
     const POSITIONS = DataProcessor.VARIABLE_POSITIONS;
     const plotlyConfig = { responsive: true, displayModeBar: false };
 
-    // Maroon-compatible color scale
-    const COLOR_SCALES = {
-        log: 'YlOrRd',
-        linear: 'YlOrRd',
-        rank: 'YlOrRd'
-    };
+    // PDB residue mapping
+    const PDB_RESI = { 9: 81, 12: 84, 13: 85, 16: 88 };
+    const WT_AA   = { 9: 'C', 12: 'K', 13: 'A', 16: 'V' };
+    const posLabel = (p) => WT_AA[p] + PDB_RESI[p];
 
-    function init() {
-        App.subscribe(render);
-    }
+    // Viridis colorscale for dark theme
+    const COLOR_SCALE = [
+        [0.00, '#440154'],
+        [0.25, '#3b528b'],
+        [0.50, '#21918c'],
+        [0.75, '#5ec962'],
+        [1.00, '#fde725']
+    ];
+
+    function init() { App.subscribe(render); }
 
     function render(state) {
         renderMarginalHeatmap(state);
@@ -26,10 +31,8 @@ const VizHeatmap = (function () {
 
     function transformValue(val, scale, allValues) {
         if (val == null || val === 0) return null;
-        if (scale === 'log') {
-            return Math.log10(Math.max(val, 0.001));
-        } else if (scale === 'rank') {
-            // Rank-based: convert to percentile
+        if (scale === 'log') return Math.log10(Math.max(val, 0.001));
+        if (scale === 'rank') {
             if (!allValues || allValues.length === 0) return val;
             const sorted = [...allValues].filter(v => v != null).sort((a, b) => a - b);
             const idx = sorted.findIndex(v => v >= val);
@@ -39,7 +42,7 @@ const VizHeatmap = (function () {
     }
 
     function getColorbarTitle(scale) {
-        if (scale === 'log') return 'log10(Fitness)';
+        if (scale === 'log') return 'log<sub>10</sub>(Fitness)';
         if (scale === 'rank') return 'Percentile';
         return 'Fitness';
     }
@@ -48,10 +51,7 @@ const VizHeatmap = (function () {
         const container = 'marginal-heatmap';
         const scale = state.colorScale;
 
-        // Collect all values for rank-based scaling
         const allMeanValues = [];
-
-        // Compute marginals for each position
         const positionData = {};
         for (const pos of POSITIONS) {
             positionData[pos] = DataProcessor.computeConditionalMarginals(pos, state.filteredIndices);
@@ -60,64 +60,45 @@ const VizHeatmap = (function () {
             }
         }
 
-        // Get all AAs that appear across all positions (union), in order
-        const allAAs = DataProcessor.AA_ORDER.filter(aa => {
-            return POSITIONS.some(pos => positionData[pos][aa]);
-        });
-
-        // Filter out stops if needed
+        const allAAs = DataProcessor.AA_ORDER.filter(aa =>
+            POSITIONS.some(pos => positionData[pos][aa])
+        );
         const displayAAs = state.hideStops ? allAAs.filter(aa => aa !== '*') : allAAs;
 
-        // Build z-matrix, text, hovertext
-        const z = [];
-        const text = [];
-        const hovertext = [];
+        const z = [], text = [], hovertext = [];
 
         for (const aa of displayAAs) {
-            const zRow = [];
-            const textRow = [];
-            const hoverRow = [];
-
+            const zRow = [], textRow = [], hoverRow = [];
             for (const pos of POSITIONS) {
                 const stats = positionData[pos][aa];
                 if (!stats) {
-                    zRow.push(null);
-                    textRow.push('');
-                    hoverRow.push('N/A — AA not present at this position');
+                    zRow.push(null); textRow.push(''); hoverRow.push('N/A');
                 } else {
-                    const displayVal = transformValue(stats.mean, scale, allMeanValues);
-                    zRow.push(displayVal);
+                    zRow.push(transformValue(stats.mean, scale, allMeanValues));
                     textRow.push(stats.mean.toFixed(1));
-
                     const name = DataProcessor.AA_NAMES[aa] || aa;
                     const isFiltered = state.filters[pos] === aa;
                     const filterIcon = isFiltered ? ' [SELECTED]' : '';
-
                     hoverRow.push(
-                        `<b>${name} (${aa})</b> at Position ${pos}${filterIcon}<br>` +
-                        `Mean: ${stats.mean.toFixed(3)}<br>` +
-                        `Median: ${stats.median.toFixed(3)}<br>` +
-                        `Std: ${stats.std.toFixed(3)}<br>` +
-                        `N = ${stats.count.toLocaleString()}`
+                        '<b>' + name + ' (' + aa + ')</b> at ' + posLabel(pos) + filterIcon + '<br>' +
+                        'Mean: ' + stats.mean.toFixed(3) + '<br>' +
+                        'Median: ' + stats.median.toFixed(3) + '<br>' +
+                        'Std: ' + stats.std.toFixed(3) + '<br>' +
+                        'N = ' + stats.count.toLocaleString()
                     );
                 }
             }
-            z.push(zRow);
-            text.push(textRow);
-            hovertext.push(hoverRow);
+            z.push(zRow); text.push(textRow); hovertext.push(hoverRow);
         }
 
-        // Build annotations for selected cells
         const annotations = [];
         for (let r = 0; r < displayAAs.length; r++) {
             for (let c = 0; c < POSITIONS.length; c++) {
                 if (state.filters[POSITIONS[c]] === displayAAs[r]) {
                     annotations.push({
-                        x: c,
-                        y: r,
-                        text: '&#9670;',
+                        x: c, y: r, text: '◆',
                         showarrow: false,
-                        font: { size: 16, color: '#800000' }
+                        font: { size: 16, color: '#fde725' }
                     });
                 }
             }
@@ -125,157 +106,130 @@ const VizHeatmap = (function () {
 
         const trace = {
             type: 'heatmap',
-            z: z,
-            x: POSITIONS.map(p => 'Pos ' + p),
-            y: displayAAs,
-            text: text,
-            texttemplate: '%{text}',
-            textfont: { size: 10 },
-            hovertext: hovertext,
-            hoverinfo: 'text',
-            colorscale: COLOR_SCALES[scale],
+            z, x: POSITIONS.map(p => posLabel(p)), y: displayAAs,
+            text, texttemplate: '%{text}',
+            textfont: { size: 10, color: 'rgba(255,255,255,0.85)' },
+            hovertext, hoverinfo: 'text',
+            colorscale: COLOR_SCALE,
             colorbar: {
-                title: { text: getColorbarTitle(scale), font: { size: 11 } },
-                thickness: 15,
-                len: 0.8
+                title: { text: getColorbarTitle(scale), font: { size: 11, color: '#cfd6e6' } },
+                tickfont: { color: '#cfd6e6' },
+                thickness: 14, len: 0.85, outlinewidth: 0
             },
-            xgap: 3,
-            ygap: 2,
+            xgap: 3, ygap: 2,
             zmin: scale === 'rank' ? 0 : undefined,
             zmax: scale === 'rank' ? 100 : undefined
         };
 
         const layout = {
-            margin: { t: 20, b: 40, l: 40, r: 80 },
-            xaxis: { side: 'bottom', tickfont: { size: 11, family: 'Inter' } },
-            yaxis: { tickfont: { size: 11, family: 'JetBrains Mono' }, autorange: 'reversed' },
-            annotations: annotations,
+            margin: { t: 20, b: 40, l: 45, r: 90 },
+            paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
-            paper_bgcolor: 'rgba(0,0,0,0)'
+            font: { color: '#cfd6e6' },
+            xaxis: { side: 'bottom', tickfont: { size: 11, family: 'Inter', color: '#cfd6e6' } },
+            yaxis: {
+                tickfont: { size: 11, family: 'JetBrains Mono', color: '#cfd6e6' },
+                autorange: 'reversed'
+            },
+            annotations
         };
 
         Plotly.react(container, [trace], layout, plotlyConfig);
 
-        // Add click handler for heatmap cells
         const plotEl = document.getElementById(container);
         plotEl.removeAllListeners && plotEl.removeAllListeners('plotly_click');
         plotEl.on('plotly_click', function (data) {
             const point = data.points[0];
             const posIdx = point.pointIndex[1];
             const aaIdx = point.pointIndex[0];
-            const pos = POSITIONS[posIdx];
-            const aa = displayAAs[aaIdx];
-            App.setFilter(pos, aa);
+            App.setFilter(POSITIONS[posIdx], displayAAs[aaIdx]);
         });
     }
 
     function renderPairwiseHeatmaps(state) {
-        const pairs = [
-            [9, 12], [9, 13], [9, 16],
-            [12, 13], [12, 16], [13, 16]
-        ];
-
-        for (const [posA, posB] of pairs) {
-            renderPairwise(posA, posB, state);
-        }
+        const pairs = [[9,12],[9,13],[9,16],[12,13],[12,16],[13,16]];
+        for (const [posA, posB] of pairs) renderPairwise(posA, posB, state);
     }
 
     function renderPairwise(posA, posB, state) {
-        const containerId = `pw-${posA}-${posB}`;
+        const containerId = 'pw-' + posA + '-' + posB;
         const scale = state.colorScale;
-
         const pairData = DataProcessor.computePairwiseStats(posA, posB, state.filteredIndices);
 
-        // Get AAs for each axis
         let aasA = DataProcessor.aasAtPosition[posA];
         let aasB = DataProcessor.aasAtPosition[posB];
-
         if (state.hideStops) {
             aasA = aasA.filter(a => a !== '*');
             aasB = aasB.filter(a => a !== '*');
         }
 
-        // Build z-matrix
-        const z = [];
-        const hovertext = [];
+        const z = [], hovertext = [];
         const allMeans = Object.values(pairData).map(d => d.mean);
 
         for (let j = 0; j < aasB.length; j++) {
-            const zRow = [];
-            const hoverRow = [];
+            const zRow = [], hoverRow = [];
             for (let i = 0; i < aasA.length; i++) {
                 const key = aasA[i] + '|' + aasB[j];
                 const entry = pairData[key];
                 if (entry) {
-                    const val = transformValue(entry.mean, scale, allMeans);
-                    zRow.push(val);
+                    zRow.push(transformValue(entry.mean, scale, allMeans));
                     hoverRow.push(
-                        `<b>Pos ${posA}=${aasA[i]}, Pos ${posB}=${aasB[j]}</b><br>` +
-                        `Mean fitness: ${entry.mean.toFixed(3)}<br>` +
-                        `N = ${entry.count.toLocaleString()}`
+                        '<b>' + posLabel(posA) + '=' + aasA[i] + ', ' + posLabel(posB) + '=' + aasB[j] + '</b><br>' +
+                        'Mean fitness: ' + entry.mean.toFixed(3) + '<br>' +
+                        'N = ' + entry.count.toLocaleString()
                     );
                 } else {
-                    zRow.push(null);
-                    hoverRow.push('No data');
+                    zRow.push(null); hoverRow.push('No data');
                 }
             }
-            z.push(zRow);
-            hovertext.push(hoverRow);
+            z.push(zRow); hovertext.push(hoverRow);
         }
+
+        const otherFilters = [];
+        for (const pos of POSITIONS) {
+            if (pos !== posA && pos !== posB && state.filters[pos]) {
+                otherFilters.push(posLabel(pos) + '=' + state.filters[pos]);
+            }
+        }
+        const condText = otherFilters.length > 0 ? ' | ' + otherFilters.join(', ') : '';
 
         const trace = {
             type: 'heatmap',
-            z: z,
-            x: aasA,
-            y: aasB,
-            hovertext: hovertext,
-            hoverinfo: 'text',
-            colorscale: COLOR_SCALES[scale],
+            z, x: aasA, y: aasB,
+            hovertext, hoverinfo: 'text',
+            colorscale: COLOR_SCALE,
             showscale: false,
-            xgap: 2,
-            ygap: 2,
+            xgap: 2, ygap: 2,
             zmin: scale === 'rank' ? 0 : undefined,
             zmax: scale === 'rank' ? 100 : undefined
         };
 
-        // Build title showing which filters are active on OTHER positions
-        const otherFilters = [];
-        for (const pos of POSITIONS) {
-            if (pos !== posA && pos !== posB && state.filters[pos]) {
-                otherFilters.push(`P${pos}=${state.filters[pos]}`);
-            }
-        }
-        const condText = otherFilters.length > 0 ? ` | ${otherFilters.join(', ')}` : '';
-
         const layout = {
             title: {
-                text: `Pos ${posA} vs ${posB}${condText}`,
-                font: { size: 12, family: 'Inter' }
+                text: posLabel(posA) + ' vs ' + posLabel(posB) + condText,
+                font: { size: 12, family: 'Inter', color: '#cfd6e6' }
             },
             margin: { t: 35, b: 30, l: 30, r: 10 },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#cfd6e6' },
             xaxis: {
-                title: { text: `Pos ${posA}`, font: { size: 10 } },
-                tickfont: { size: 9, family: 'JetBrains Mono' }
+                title: { text: posLabel(posA), font: { size: 10, color: '#cfd6e6' } },
+                tickfont: { size: 9, family: 'JetBrains Mono', color: '#cfd6e6' }
             },
             yaxis: {
-                title: { text: `Pos ${posB}`, font: { size: 10 } },
-                tickfont: { size: 9, family: 'JetBrains Mono' }
-            },
-            plot_bgcolor: 'rgba(0,0,0,0)',
-            paper_bgcolor: 'rgba(0,0,0,0)'
+                title: { text: posLabel(posB), font: { size: 10, color: '#cfd6e6' } },
+                tickfont: { size: 9, family: 'JetBrains Mono', color: '#cfd6e6' }
+            }
         };
 
         Plotly.react(containerId, [trace], layout, plotlyConfig);
 
-        // Click handler for pairwise heatmap
         const plotEl = document.getElementById(containerId);
         plotEl.removeAllListeners && plotEl.removeAllListeners('plotly_click');
         plotEl.on('plotly_click', function (data) {
             const point = data.points[0];
-            const aaA = aasA[point.pointIndex[1]];
-            const aaB = aasB[point.pointIndex[0]];
-            // Set filter for posA (toggle behavior handled inside setFilter)
-            App.setFilter(posA, aaA);
+            App.setFilter(posA, aasA[point.pointIndex[1]]);
         });
     }
 

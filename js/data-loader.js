@@ -57,7 +57,21 @@ const DataLoader = (function () {
                 }, 50);
             },
             error: function (err) {
-                setStatus('Error loading data: ' + err.message);
+                const isFile = location.protocol === 'file:';
+                if (isFile) {
+                    setStatus('');
+                    if (statusEl) {
+                        statusEl.innerHTML =
+                            '<div style="color:#fbbf24;font-size:13.5px;line-height:1.6;">' +
+                            "Browsers won't load CSV files over <code>file://</code> URLs.<br>" +
+                            'Please run a local server, e.g.:<br>' +
+                            '<code style="display:inline-block;margin-top:6px;background:#1a2238;padding:6px 10px;border-radius:6px;font-size:12px;">python3 -m http.server 8000</code><br>' +
+                            'or double-click <strong>start.command</strong> in this folder.' +
+                            '</div>';
+                    }
+                } else {
+                    setStatus('Error loading data: ' + (err && err.message ? err.message : 'check console'));
+                }
                 console.error('PapaParse error:', err);
             }
         });

@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DMS Fitness Landscape Explorer</title>
-    <meta name="description" content="Interactive explorer for deep mutational scanning fitness landscape data">
+    <title>DMS Fitness Explorer: Ras</title>
+    <meta name="description" content="Interactive explorer for deep mutational scanning data on the Ras–Raf interface">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -16,7 +16,7 @@
         <div class="loading-content">
             <div class="loading-spinner"></div>
             <h2>Loading Fitness Landscape</h2>
-            <p id="loading-status">Initializing...</p>
+            <p id="loading-status">Initializing…</p>
             <div class="progress-bar">
                 <div class="progress-fill" id="loading-progress"></div>
             </div>
@@ -27,12 +27,13 @@
     <nav class="navbar" id="navbar">
         <div class="nav-inner">
             <div class="nav-brand">
-                <span class="nav-icon">&#x1F9EC;</span>
-                <span class="nav-title">DMS Fitness Explorer</span>
+                <span class="nav-icon">⌬</span>
+                <span class="nav-title">DMS Fitness Explorer<span class="nav-subtitle">: Ras</span></span>
             </div>
             <div class="nav-links">
                 <a href="#landscape" class="nav-link active">Landscape</a>
                 <a href="#structure" class="nav-link">Structure</a>
+                <a href="#composition" class="nav-link">Composition</a>
                 <a href="#explorer" class="nav-link">Explorer</a>
                 <a href="#statistics" class="nav-link">Statistics</a>
             </div>
@@ -41,10 +42,13 @@
 
     <!-- Hero / Header -->
     <header class="hero" id="hero">
+        <div class="hero-bg"></div>
         <div class="container">
-            <h1>Deep Mutational Scanning<br>Fitness Landscape Explorer</h1>
+            <div class="hero-eyebrow">Deep Mutational Scanning · Ras–Raf interface</div>
+            <h1>Fitness Landscape Explorer<span class="hero-target">Ras</span></h1>
+            <p class="hero-tagline">Click amino acid letters to explore how each variant performs at the Ras-binding interface — from sequence statistics to atomic side-chain geometry.</p>
             <div class="scaffold-display" id="scaffold-display">
-                <!-- Filled by JS with colored variable positions -->
+                <!-- Filled by JS with WT scaffold and selected AAs at variable positions -->
             </div>
             <div class="data-summary" id="data-summary">
                 <!-- Filled by JS after data loads -->
@@ -59,10 +63,9 @@
         <section id="landscape" class="section">
             <div class="section-header">
                 <h2>Interactive Fitness Landscape</h2>
-                <p>Click amino acid chips or heatmap cells to filter. See how fitness changes across positions.</p>
+                <p>Click amino acid chips, heatmap cells, or logo letters to filter. Distributions, structure, and tables update in lockstep.</p>
             </div>
 
-            <!-- Position Selector Bar -->
             <div class="card selector-card" id="selector-card">
                 <div class="selector-header">
                     <h3>Position Filters</h3>
@@ -74,15 +77,10 @@
                         <button class="btn btn-sm btn-outline" id="clear-all-btn">Clear All</button>
                     </div>
                 </div>
-                <div id="selector-container">
-                    <!-- Filled by ui-selector.js -->
-                </div>
-                <div class="filter-summary" id="filter-summary">
-                    <!-- Shows current filter state and matching count -->
-                </div>
+                <div id="selector-container"></div>
+                <div class="filter-summary" id="filter-summary"></div>
             </div>
 
-            <!-- Heatmap + Distribution Row -->
             <div class="viz-row">
                 <div class="card viz-card viz-card-wide">
                     <div class="card-header">
@@ -102,13 +100,19 @@
                     <div id="distribution-plot" class="plot-container"></div>
                 </div>
             </div>
+        </section>
 
-            <!-- 3D Structure Viewer -->
+        <!-- Section: 3D Structure -->
+        <section id="structure" class="section">
+            <div class="section-header">
+                <h2>Ras–Raf Interface · 3D Structure</h2>
+                <p>PDB 4G0N. Selecting a non-WT amino acid replaces the side chain with a Dunbrack rotamer so you can see steric and chemical changes at the binding site.</p>
+            </div>
             <div class="card" id="structure-card">
                 <div class="card-header">
-                    <h3>Ras–Raf Interface Structure</h3>
+                    <h3>Atomic View</h3>
                     <div class="structure-controls">
-                        <span class="structure-pdb-label">PDB: 4G0N</span>
+                        <span class="structure-pdb-label">PDB&nbsp;<strong>4G0N</strong></span>
                         <select id="structure-color-mode" class="input input-select">
                             <option value="mean">Color by mean fitness</option>
                             <option value="tolerance">Color by AA tolerance</option>
@@ -116,7 +120,7 @@
                         <button class="btn btn-xs" id="structure-reset-btn">Reset View</button>
                     </div>
                 </div>
-                <div class="structure-layout" id="structure">
+                <div class="structure-layout">
                     <div class="structure-viewer-wrap">
                         <div id="viewer-3dmol" class="viewer-3dmol-container"></div>
                         <div class="structure-hover-tooltip" id="structure-tooltip"></div>
@@ -125,11 +129,8 @@
                         <div class="legend-title">Fitness at Interface</div>
                         <div class="legend-info" id="structure-info">
                             Raf RBD (Chain B, residues 72–96) at the Ras binding interface.
-                            Variable positions are colored by mean fitness under current filters.
                         </div>
-                        <div class="legend-residues" id="structure-residues">
-                            <!-- Filled by viz-structure.js -->
-                        </div>
+                        <div class="legend-residues" id="structure-residues"></div>
                         <div class="legend-gradient">
                             <div class="gradient-bar"></div>
                             <div class="gradient-labels">
@@ -139,19 +140,47 @@
                         </div>
                         <div class="legend-contacts" id="structure-contacts">
                             <div class="legend-subtitle">Ras Contact Residues</div>
-                            <div id="contact-residues-list">
-                                <!-- Filled by viz-structure.js -->
-                            </div>
+                            <div id="contact-residues-list"></div>
                         </div>
                     </div>
                 </div>
             </div>
+        </section>
 
-            <!-- Pairwise Epistasis Heatmaps -->
+        <!-- Section: Composition / Logo / Property -->
+        <section id="composition" class="section">
+            <div class="section-header">
+                <h2>Sequence Composition</h2>
+                <p>How variants are built and how biochemistry shapes fitness.</p>
+            </div>
+
+            <div class="viz-row">
+                <div class="card viz-card">
+                    <div class="card-header">
+                        <h3>Sequence Logo · per Position</h3>
+                    </div>
+                    <div id="sequence-logo" class="logo-container"></div>
+                </div>
+                <div class="card viz-card">
+                    <div class="card-header">
+                        <h3>Mean Fitness by AA Property</h3>
+                    </div>
+                    <div id="property-plot" class="plot-container"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Variant vs Wildtype · Fitness Δ</h3>
+                </div>
+                <div id="delta-summary" class="delta-summary"></div>
+                <div id="delta-plot" class="plot-container"></div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <h3>Pairwise Epistasis</h3>
-                    <p class="card-subtitle">Mean fitness for each amino acid combination at two positions, conditioned on current filters</p>
+                    <p class="card-subtitle">Mean fitness for each AA combination at two positions, conditioned on current filters</p>
                 </div>
                 <div class="pairwise-grid" id="pairwise-grid">
                     <div id="pw-9-12" class="plot-container pairwise-plot"></div>
@@ -170,11 +199,10 @@
                 <h2>Sequence Explorer</h2>
                 <p>Browse, search, and sort all sequences. Filters from above are applied.</p>
             </div>
-
             <div class="card">
                 <div class="table-controls">
                     <div class="search-box">
-                        <input type="text" id="seq-search" placeholder="Search sequences (e.g. AKLF or rank number)..." class="input">
+                        <input type="text" id="seq-search" placeholder="Search sequences (e.g. AKLF or rank number)…" class="input">
                     </div>
                     <div class="table-actions">
                         <select id="sort-select" class="input input-select">
@@ -192,16 +220,15 @@
                             <tr>
                                 <th class="sortable" data-sort="rank">Rank</th>
                                 <th>Sequence</th>
-                                <th class="sortable" data-sort="p9">Pos 9</th>
-                                <th class="sortable" data-sort="p12">Pos 12</th>
-                                <th class="sortable" data-sort="p13">Pos 13</th>
-                                <th class="sortable" data-sort="p16">Pos 16</th>
+                                <th class="sortable" data-sort="p9">C81</th>
+                                <th class="sortable" data-sort="p12">K84</th>
+                                <th class="sortable" data-sort="p13">A85</th>
+                                <th class="sortable" data-sort="p16">V88</th>
                                 <th class="sortable active-sort" data-sort="slope">Fitness</th>
                                 <th>Tags</th>
                             </tr>
                         </thead>
-                        <tbody id="seq-tbody">
-                        </tbody>
+                        <tbody id="seq-tbody"></tbody>
                     </table>
                     <div id="table-sentinel" class="table-sentinel"></div>
                 </div>
@@ -214,12 +241,10 @@
                 <h2>Summary Statistics</h2>
                 <p>Overview of the fitness landscape distribution and key metrics.</p>
             </div>
-
             <div class="card">
                 <div class="card-header"><h3>Fitness Distribution</h3></div>
                 <div id="fitness-histogram" class="plot-container"></div>
             </div>
-
             <div class="stats-grid">
                 <div class="card">
                     <div class="card-header"><h3>Top 20 Sequences</h3></div>
@@ -233,10 +258,9 @@
         </section>
     </main>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <p>DMS Fitness Landscape Explorer &mdash; Built for interactive exploration of deep mutational scanning data</p>
+            <p>DMS Fitness Explorer · Ras–Raf interface · Built for interactive exploration of deep mutational scanning data</p>
         </div>
     </footer>
 
@@ -246,13 +270,17 @@
     <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
 
     <!-- Application Modules -->
-    <script src="js/data-processor.js?v=5"></script>
-    <script src="js/data-loader.js?v=5"></script>
-    <script src="js/viz-heatmap.js?v=5"></script>
-    <script src="js/viz-charts.js?v=5"></script>
-    <script src="js/viz-structure.js?v=5"></script>
-    <script src="js/ui-selector.js?v=5"></script>
-    <script src="js/ui-table.js?v=5"></script>
-    <script src="js/app.js?v=5"></script>
+    <script src="js/data-processor.js?v=8"></script>
+    <script src="js/data-loader.js?v=8"></script>
+    <script src="js/sidechain-library.js?v=8"></script>
+    <script src="js/viz-heatmap.js?v=8"></script>
+    <script src="js/viz-charts.js?v=8"></script>
+    <script src="js/viz-logo.js?v=8"></script>
+    <script src="js/viz-property.js?v=8"></script>
+    <script src="js/viz-delta.js?v=8"></script>
+    <script src="js/viz-structure.js?v=8"></script>
+    <script src="js/ui-selector.js?v=8"></script>
+    <script src="js/ui-table.js?v=8"></script>
+    <script src="js/app.js?v=8"></script>
 </body>
 </html>

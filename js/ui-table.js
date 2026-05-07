@@ -111,7 +111,7 @@ const UITable = (function () {
             td.className = 'aa-cell';
             td.textContent = seq[key];
             if (seq[key] === '*') {
-                td.style.color = 'var(--color-danger)';
+                td.style.color = 'var(--aa-stop)';
             }
             tr.appendChild(td);
         }
@@ -147,13 +147,17 @@ const UITable = (function () {
         const tags = [];
 
         if (seq.slope >= DataProcessor.percentile1) {
-            tags.push('<span class="tag tag-top1">Top 1%</span>');
+            tags.push('<span class="row-tag tag-top">Top 1%</span>');
         } else if (seq.slope >= DataProcessor.percentile10) {
-            tags.push('<span class="tag tag-top10">Top 10%</span>');
+            tags.push('<span class="row-tag tag-top">Top 10%</span>');
         }
 
         if (seq.hasStop) {
-            tags.push('<span class="tag tag-stop">Stop</span>');
+            tags.push('<span class="row-tag tag-stop">Stop</span>');
+        }
+
+        if (seq.p9 === 'C' && seq.p12 === 'K' && seq.p13 === 'A' && seq.p16 === 'V') {
+            tags.push('<span class="row-tag tag-wt">WT</span>');
         }
 
         return tags.join(' ');
