@@ -1,10 +1,10 @@
-# DMS Fitness Explorer: Ras — v2
+# DMS Fitness Explorer: Raf — v2
 
 Refreshed explorer for deep mutational scanning data on the Ras–Raf interface.
 
 ## What's new
 
-- **Title & branding** — renamed throughout to *DMS Fitness Explorer: Ras*
+- **Title & branding** — renamed throughout to *DMS Fitness Explorer: Raf*
 - **Modern dark scientific theme** — viridis-aligned palette, sticky glass nav, glowing scaffold display
 - **Live side-chain mutation in the 3D viewer** — selecting any non-WT amino acid replaces the side chain atoms with a Dunbrack rotamer at C81, K84, A85, or V88
 - **New visualizations**
